@@ -73,9 +73,20 @@ export default async function AdminProductsPage() {
                   )}
                 </td>
                 <td className="p-3 space-x-2">
-                  <Link href={`/products/${p.slug}`} className="text-amber-700 hover:underline font-bold">
-                    View
+                  <Link href={`/admin/products/${p.id}/edit`} className="text-blue-600 hover:underline font-bold">
+                    Edit
                   </Link>
+                  <button
+                    onClick={async () => {
+                      if (confirm('Are you sure you want to delete this product?')) {
+                        await fetch(`/api/products/${p.id}`, { method: 'DELETE' });
+                        window.location.reload();
+                      }
+                    }}
+                    className="text-red-600 hover:underline font-bold"
+                  >
+                    Delete
+                  </button>
                 </td>
               </tr>
             ))}

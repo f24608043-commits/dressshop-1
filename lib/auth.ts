@@ -60,7 +60,7 @@ export const authOptions: NextAuthOptions = {
       : []),
   ],
   callbacks: {
-    async jwt({ token, user }) {
+    async jwt({ token, user, account }) {
       if (user) {
         token.id = user.id;
         token.role = user.role;
@@ -73,6 +73,31 @@ export const authOptions: NextAuthOptions = {
         session.user.role = token.role as 'CUSTOMER' | 'ADMIN';
       }
       return session;
+    },
+    async signIn({ user, account, profile }) {
+      if (account?.provider === 'google') {
+        try {
+          const existingUser = await prisma.user.findUnique({
+            where: { email: user.email! },
+          });
+
+          if (!existingUser) {
+            await prisma.user.create({
+              data: {
+                email: user.email!,
+                name: user.name,
+                role: 'CUSTOMER',
+                emailVerified: new Date(),
+              },
+            });
+          }
+          return true;
+        } catch (error) {
+          console.error('Google sign-in error:', error);
+          return false;
+        }
+      }
+      return true;
     },
   },
 };

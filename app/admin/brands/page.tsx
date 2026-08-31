@@ -7,6 +7,7 @@ export default function AdminBrandsPage() {
   const [name, setName] = useState('');
   const [slug, setSlug] = useState('');
   const [logoUrl, setLogoUrl] = useState('');
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [status, setStatus] = useState<string | null>(null);
 
   const fetchBrands = async () => {
@@ -28,19 +29,27 @@ export default function AdminBrandsPage() {
     setStatus(null);
     try {
       const res = await fetch('/api/brands', {
-        method: 'POST',
+        method: editingId ? 'PUT' : 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, slug, logoUrl: logoUrl || null }),
+        body: JSON.stringify({ id: editingId, name, slug, logoUrl: logoUrl || null }),
       });
       const data = await res.json();
       if (res.ok) {
-        setStatus('✅ Brand created!');
+        setStatus(editingId ? '✅ Brand updated!' : '✅ Brand created!');
         setName(''); setSlug(''); setLogoUrl('');
+        setEditingId(null);
         fetchBrands();
       } else {
         setStatus(`❌ ${data.error}`);
       }
     } catch { setStatus('❌ Network error.'); }
+  };
+
+  const handleEdit = (brand: any) => {
+    setName(brand.name);
+    setSlug(brand.slug);
+    setLogoUrl(brand.logoUrl || '');
+    setEditingId(brand.id);
   };
 
   const handleDelete = async (id: string) => {
@@ -71,7 +80,23 @@ export default function AdminBrandsPage() {
             <label className="font-bold text-gray-700 block mb-1">Logo Image URL</label>
             <input type="url" value={logoUrl} onChange={(e) => setLogoUrl(e.target.value)} placeholder="https://..." className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-white" />
           </div>
-          <button type="submit" className="w-full py-2.5 bg-amber-600 hover:bg-amber-700 text-white font-bold rounded-lg shadow">Create Brand ➔</button>
+          <button type="submit" className="w-full py-2.5 bg-amber-600 hover:bg-amber-700 text-white font-bold rounded-lg shadow">
+            {editingId ? 'Update Brand ➔' : 'Create Brand ➔'}
+          </button>
+          {editingId && (
+            <button
+              type="button"
+              onClick={() => {
+                setName('');
+                setSlug('');
+                setLogoUrl('');
+                setEditingId(null);
+              }}
+              className="w-full py-2.5 bg-gray-300 hover:bg-gray-400 text-gray-700 font-bold rounded-lg"
+            >
+              Cancel
+            </button>
+          )}
           {status && <p className="text-xs font-bold text-center">{status}</p>}
         </form>
 
@@ -92,6 +117,7 @@ export default function AdminBrandsPage() {
                   <td className="p-3 font-mono text-gray-500">{b.slug}</td>
                   <td className="p-3">{b._count?.products || 0}</td>
                   <td className="p-3">
+                    <button onClick={() => handleEdit(b)} className="text-blue-600 hover:underline font-bold mr-2">Edit</button>
                     <button onClick={() => handleDelete(b.id)} className="text-red-600 hover:underline font-bold">Delete</button>
                   </td>
                 </tr>

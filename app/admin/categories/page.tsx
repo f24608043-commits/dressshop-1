@@ -7,6 +7,7 @@ export default function AdminCategoriesPage() {
   const [name, setName] = useState('');
   const [slug, setSlug] = useState('');
   const [parentCategoryId, setParentCategoryId] = useState('');
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [status, setStatus] = useState<string | null>(null);
 
   const fetchCategories = async () => {
@@ -31,9 +32,10 @@ export default function AdminCategoriesPage() {
 
     try {
       const res = await fetch('/api/categories', {
-        method: 'POST',
+        method: editingId ? 'PUT' : 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          id: editingId,
           name,
           slug,
           parentCategoryId: parentCategoryId || null,
@@ -42,17 +44,25 @@ export default function AdminCategoriesPage() {
 
       const data = await res.json();
       if (res.ok) {
-        setStatus('✅ Category created successfully!');
+        setStatus(editingId ? '✅ Category updated successfully!' : '✅ Category created successfully!');
         setName('');
         setSlug('');
         setParentCategoryId('');
+        setEditingId(null);
         fetchCategories();
       } else {
-        setStatus(`❌ ${data.error || 'Failed to create category'}`);
+        setStatus(`❌ ${data.error || 'Failed to save category'}`);
       }
     } catch {
-      setStatus('❌ Network error creating category.');
+      setStatus('❌ Network error saving category.');
     }
+  };
+
+  const handleEdit = (category: any) => {
+    setName(category.name);
+    setSlug(category.slug);
+    setParentCategoryId(category.parentCategoryId || '');
+    setEditingId(category.id);
   };
 
   const handleDelete = async (id: string) => {
@@ -112,8 +122,22 @@ export default function AdminCategoriesPage() {
           </div>
 
           <button type="submit" className="w-full py-2.5 bg-amber-600 hover:bg-amber-700 text-white font-bold rounded-lg shadow">
-            Create Category ➔
+            {editingId ? 'Update Category ➔' : 'Create Category ➔'}
           </button>
+          {editingId && (
+            <button
+              type="button"
+              onClick={() => {
+                setName('');
+                setSlug('');
+                setParentCategoryId('');
+                setEditingId(null);
+              }}
+              className="w-full py-2.5 bg-gray-300 hover:bg-gray-400 text-gray-700 font-bold rounded-lg"
+            >
+              Cancel
+            </button>
+          )}
 
           {status && <p className="text-xs font-bold text-center mt-2">{status}</p>}
         </form>
@@ -138,6 +162,7 @@ export default function AdminCategoriesPage() {
                       <td className="p-3 font-mono text-gray-500">{c.slug}</td>
                       <td className="p-3">{c._count?.products || 0} products</td>
                       <td className="p-3">
+                        <button onClick={() => handleEdit(c)} className="text-blue-600 hover:underline mr-2">Edit</button>
                         <button onClick={() => handleDelete(c.id)} className="text-red-600 hover:underline">Delete</button>
                       </td>
                     </tr>

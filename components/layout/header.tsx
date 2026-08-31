@@ -34,20 +34,6 @@ export function Header() {
 
   return (
     <header className="sticky top-0 z-40 bg-white shadow-xs">
-      {/* Top Shipping Bar */}
-      <div className="bg-neutral-900 text-white text-[11px] py-1.5 px-4 text-center font-medium flex items-center justify-center gap-4">
-        <span>✈ Free Express Worldwide Shipping on Orders Over $150</span>
-        <span className="hidden md:inline">|</span>
-        <span className="hidden md:inline">✨ 25,000+ Designer Ethnic Creations</span>
-        <span className="hidden md:inline">|</span>
-        <span className="hidden md:inline">✂ Made to Measure Custom Fit</span>
-      </div>
-
-      {/* Value Guarantee Burgundy Bar */}
-      <div className="bg-[#580520] text-amber-200 text-xs py-1.5 px-4 text-center font-semibold tracking-wider flex items-center justify-center gap-2 border-b border-amber-900/40">
-        <span>✦ VALUE GUARANTEED • WEAR IT, KEEP IT, OR RETURN IT • GET 40% BACK ✦</span>
-      </div>
-
       {/* Main Header Container */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 border-b border-gray-100">
         <div className="flex items-center justify-between h-20 gap-4">

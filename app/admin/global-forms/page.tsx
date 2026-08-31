@@ -25,6 +25,7 @@ export default function AdminGlobalFormsPage() {
   const [forms, setForms] = useState<any[]>([]);
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [options, setOptions] = useState<ParentOptionInput[]>([
     {
       title: 'Stitching Style',
@@ -114,9 +115,10 @@ export default function AdminGlobalFormsPage() {
 
     try {
       const res = await fetch('/api/global-forms', {
-        method: 'POST',
+        method: editingId ? 'PUT' : 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          id: editingId,
           name: name.trim(),
           description: description.trim() || null,
           active: true,
@@ -127,17 +129,25 @@ export default function AdminGlobalFormsPage() {
       const data = await res.json();
 
       if (res.ok) {
-        setStatus(`✅ Global Form "${data.name}" created successfully!`);
+        setStatus(editingId ? `✅ Global Form "${data.name}" updated successfully!` : `✅ Global Form "${data.name}" created successfully!`);
         setName('');
         setDescription('');
         setOptions([]);
+        setEditingId(null);
         fetchForms();
       } else {
-        setStatus(`❌ ${data.error || 'Failed to create global form'}`);
+        setStatus(`❌ ${data.error || 'Failed to save global form'}`);
       }
     } catch {
-      setStatus('❌ Network error creating form.');
+      setStatus('❌ Network error saving form.');
     }
+  };
+
+  const handleEdit = (form: any) => {
+    setName(form.name);
+    setDescription(form.description || '');
+    setOptions(form.options || []);
+    setEditingId(form.id);
   };
 
   const handleDelete = async (id: string) => {
@@ -324,8 +334,22 @@ export default function AdminGlobalFormsPage() {
             type="submit"
             className="w-full py-3 bg-[#580520] hover:bg-[#7b113a] text-amber-200 font-serif font-bold text-sm uppercase tracking-wider rounded"
           >
-            Save Global Form Definition ➔
+            {editingId ? 'Update Global Form ➔' : 'Save Global Form Definition ➔'}
           </button>
+          {editingId && (
+            <button
+              type="button"
+              onClick={() => {
+                setName('');
+                setDescription('');
+                setOptions([]);
+                setEditingId(null);
+              }}
+              className="w-full py-3 bg-gray-300 hover:bg-gray-400 text-gray-700 font-serif font-bold text-sm uppercase tracking-wider rounded"
+            >
+              Cancel
+            </button>
+          )}
 
           {status && <p className="font-bold text-center p-2.5 bg-gray-100 rounded text-xs">{status}</p>}
         </form>
@@ -343,12 +367,20 @@ export default function AdminGlobalFormsPage() {
                   <h3 className="font-serif font-bold text-gray-900 text-sm">⚙️ {form.name}</h3>
                   {form.description && <p className="text-[11px] text-gray-500">{form.description}</p>}
                 </div>
-                <button
-                  onClick={() => handleDelete(form.id)}
-                  className="text-xs text-red-600 hover:underline font-bold"
-                >
-                  Delete
-                </button>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => handleEdit(form)}
+                    className="text-xs text-blue-600 hover:underline font-bold"
+                  >
+                    Edit
+                  </button>
+                  <button
+                    onClick={() => handleDelete(form.id)}
+                    className="text-xs text-red-600 hover:underline font-bold"
+                  >
+                    Delete
+                  </button>
+                </div>
               </div>
 
               {/* Display Hierarchy */}

@@ -3,11 +3,12 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { prisma } from '@/lib/prisma';
 import { ProductCard } from '@/components/product/product-card';
+import { HeroSection } from '@/components/hero-section';
 
 export const revalidate = 60; // SSR with 60s revalidation
 
 export default async function HomePage() {
-  const [featuredProducts, categories] = await Promise.all([
+  const [featuredProducts, categories, allProducts] = await Promise.all([
     prisma.product.findMany({
       where: { featured: true },
       include: {
@@ -22,6 +23,14 @@ export default async function HomePage() {
       where: { parentCategoryId: null },
       take: 6,
     }),
+    prisma.product.findMany({
+      include: {
+        images: { orderBy: { order: 'asc' } },
+        category: true,
+        brand: true,
+        reviews: { where: { approved: true }, select: { rating: true } },
+      },
+    }),
   ]);
 
   const occasions = [
@@ -32,78 +41,43 @@ export default async function HomePage() {
   ];
 
   return (
-    <div className="space-y-16 py-4">
-      {/* Cbazaar Hero Banner Slider */}
-      <section className="relative rounded-xl overflow-hidden bg-neutral-950 text-white min-h-[480px] flex items-center shadow-xl">
-        <div className="absolute inset-0 z-0 opacity-55">
-          <Image
-            src="https://images.unsplash.com/photo-1610030469983-98e550d6193c?q=80&w=1600"
-            alt="Bridal Couture Banner"
-            fill
-            priority
-            className="object-cover object-top"
-          />
-        </div>
+    <div className="space-y-0">
+      {/* Scroll-Driven Hero Animation Section */}
+      <HeroSection />
 
-        <div className="relative z-10 max-w-3xl px-8 sm:px-16 py-12 space-y-6">
-          <span className="bg-amber-400/20 text-amber-300 text-xs font-bold px-3.5 py-1 rounded-full border border-amber-400/40 uppercase tracking-widest inline-block">
-            ✦ Heritage Bridal Collection 2026
-          </span>
-          <h1 className="text-4xl sm:text-6xl font-serif font-bold tracking-wide leading-tight">
-            Less Ordinary, <br />
-            <span className="text-amber-300 italic">More Artfully Yours.</span>
-          </h1>
-          <p className="text-gray-200 text-sm sm:text-base leading-relaxed max-w-xl font-light">
-            Handcrafted Zardozi Lehengas, Real Kundan Jewellery, & Custom Made-to-Measure Ethnic Ensembles tailored by master couturiers.
-          </p>
-          <div className="flex flex-wrap gap-4 pt-2">
-            <Link
-              href="/shop?category=bridal-lehengas"
-              className="px-8 py-3.5 bg-[#580520] hover:bg-[#7b113a] text-amber-200 font-bold text-xs uppercase tracking-wider rounded-sm shadow-xl transition-transform hover:scale-105"
-            >
-              Explore Wedding Lehengas ➔
-            </Link>
-            <Link
-              href="/shop?category=bridal-jewellery"
-              className="px-8 py-3.5 bg-white/10 hover:bg-white/20 text-white font-bold text-xs uppercase tracking-wider rounded-sm backdrop-blur-xs transition-colors border border-white/30"
-            >
-              Royal Kundan Jewels
-            </Link>
-          </div>
-        </div>
-      </section>
-
-      {/* Shop By Category Section */}
-      <section className="space-y-6">
-        <div className="text-center space-y-2 border-b border-gray-200 pb-4">
-          <h2 className="text-2xl sm:text-3xl font-serif font-bold text-gray-900 tracking-wide">
+      {/* Content Container - applies to all sections below hero */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+        {/* Shop By Category Section */}
+        <section className="space-y-4">
+          <div className="text-center space-y-1 border-b border-gray-200 pb-3">
+          <h2 className="text-xl sm:text-2xl font-serif font-bold text-gray-900 tracking-wide">
             EXPLORE BY CATEGORY
           </h2>
-          <p className="text-xs text-amber-900 uppercase tracking-widest font-semibold">
+          <p className="text-[10px] text-amber-900 uppercase tracking-widest font-semibold">
             Fine Ethnic Craftsmanship & Bridal Excellence
           </p>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
           {categories.map((cat) => (
             <Link
               key={cat.id}
               href={`/shop?category=${cat.slug}`}
-              className="group relative h-80 rounded-lg overflow-hidden shadow-sm block bg-neutral-900"
+              className="group relative h-48 rounded-lg overflow-hidden shadow-sm block bg-neutral-900"
             >
               <Image
                 src={cat.heroBannerImageUrl || 'https://images.unsplash.com/photo-1610030469983-98e550d6193c?q=80&w=800'}
                 alt={cat.name}
                 fill
+                sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
                 className="object-cover group-hover:scale-110 transition-transform duration-700 opacity-80 group-hover:opacity-70"
               />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent p-6 flex flex-col justify-end">
-                <h3 className="text-xl font-serif font-bold text-white group-hover:text-amber-300 transition-colors">
+              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent p-3 flex flex-col justify-end">
+                <h3 className="text-sm font-serif font-bold text-white group-hover:text-amber-300 transition-colors">
                   {cat.name}
                 </h3>
-                <p className="text-xs text-gray-300 line-clamp-1 mt-1 font-light">{cat.description}</p>
-                <span className="text-[11px] font-bold text-amber-300 mt-3 inline-flex items-center gap-1 uppercase tracking-wider">
-                  Shop Collection ➔
+                <span className="text-[9px] font-bold text-amber-300 mt-1 uppercase tracking-wider">
+                  Shop ➔
                 </span>
               </div>
             </Link>
@@ -111,32 +85,33 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* Shop By Wedding Occasion Grid (Cbazaar Style) */}
-      <section className="space-y-6">
-        <div className="text-center space-y-2 border-b border-gray-200 pb-4">
-          <h2 className="text-2xl sm:text-3xl font-serif font-bold text-gray-900 tracking-wide">
+      {/* Shop By Wedding Occasion Grid */}
+      <section className="space-y-4">
+        <div className="text-center space-y-1 border-b border-gray-200 pb-3">
+          <h2 className="text-xl sm:text-2xl font-serif font-bold text-gray-900 tracking-wide">
             WEDDING OCCASION LOOKS
           </h2>
-          <p className="text-xs text-amber-900 uppercase tracking-widest font-semibold">
+          <p className="text-[10px] text-amber-900 uppercase tracking-widest font-semibold">
             Curated Outfits For Every Festive Celebration
           </p>
         </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           {occasions.map((occ, idx) => (
             <Link
               key={idx}
               href={`/shop?category=${occ.slug}`}
-              className="group relative h-64 rounded-sm overflow-hidden block bg-neutral-900"
+              className="group relative h-40 rounded-sm overflow-hidden block bg-neutral-900"
             >
               <Image
                 src={occ.image}
                 alt={occ.title}
                 fill
+                sizes="(max-width: 768px) 50vw, 25vw"
                 className="object-cover group-hover:scale-105 transition-transform duration-500 opacity-80"
               />
-              <div className="absolute inset-0 bg-black/40 group-hover:bg-black/20 transition-colors flex items-center justify-center p-4">
-                <span className="text-white font-serif font-bold text-lg sm:text-xl text-center border-b border-amber-300 pb-1 group-hover:text-amber-300 transition-colors">
+              <div className="absolute inset-0 bg-black/40 group-hover:bg-black/20 transition-colors flex items-center justify-center p-2">
+                <span className="text-white font-serif font-bold text-xs sm:text-sm text-center border-b border-amber-300 pb-0.5 group-hover:text-amber-300 transition-colors">
                   {occ.title}
                 </span>
               </div>
@@ -146,18 +121,18 @@ export default async function HomePage() {
       </section>
 
       {/* Featured Products */}
-      <section className="space-y-6">
-        <div className="flex items-end justify-between border-b border-gray-200 pb-4">
+      <section className="space-y-4">
+        <div className="flex items-end justify-between border-b border-gray-200 pb-3">
           <div>
-            <h2 className="text-2xl font-serif font-bold text-gray-900">FEATURED BRIDAL CREATIONS</h2>
-            <p className="text-xs text-gray-500 mt-1">Top-rated handcrafted designs selected by our master stylists</p>
+            <h2 className="text-xl font-serif font-bold text-gray-900">FEATURED BRIDAL CREATIONS</h2>
+            <p className="text-[10px] text-gray-500 mt-0.5">Top-rated handcrafted designs selected by our master stylists</p>
           </div>
-          <Link href="/shop" className="text-xs font-bold text-[#580520] hover:underline uppercase tracking-wider">
-            View All Products ➔
+          <Link href="/shop" className="text-[10px] font-bold text-[#580520] hover:underline uppercase tracking-wider">
+            View All ➔
           </Link>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
           {featuredProducts.map((prod) => (
             <ProductCard
               key={prod.id}
@@ -181,26 +156,115 @@ export default async function HomePage() {
         </div>
       </section>
 
+      {/* All Products */}
+      <section className="space-y-4">
+        <div className="flex items-end justify-between border-b border-gray-200 pb-3">
+          <div>
+            <h2 className="text-xl font-serif font-bold text-gray-900">ALL PRODUCTS</h2>
+            <p className="text-[10px] text-gray-500 mt-0.5">Browse our complete collection of bridal couture and ethnic wear</p>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
+          {allProducts.map((prod) => (
+            <ProductCard
+              key={prod.id}
+              id={prod.id}
+              name={prod.name}
+              slug={prod.slug}
+              basePrice={Number(prod.basePrice)}
+              originalPrice={prod.originalPrice ? Number(prod.originalPrice) : null}
+              productType={prod.productType}
+              images={prod.images}
+              category={prod.category}
+              brand={prod.brand}
+              averageRating={
+                prod.reviews.length > 0
+                  ? Math.round((prod.reviews.reduce((acc, r) => acc + r.rating, 0) / prod.reviews.length) * 10) / 10
+                  : 5.0
+              }
+              totalReviews={prod.reviews.length || 15}
+            />
+          ))}
+        </div>
+      </section>
+
+      {/* Blog Section */}
+      <section className="space-y-4">
+        <div className="text-center space-y-1 border-b border-gray-200 pb-3">
+          <h2 className="text-xl sm:text-2xl font-serif font-bold text-gray-900 tracking-wide">
+            LATEST FROM OUR BLOG
+          </h2>
+          <p className="text-[10px] text-amber-900 uppercase tracking-widest font-semibold">
+            Bridal Tips, Trends & Inspiration
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <Link href="/blog/choosing-the-perfect-bed" className="group relative h-48 rounded-lg overflow-hidden shadow-sm block bg-neutral-900">
+            <Image
+              src="https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?q=80&w=800"
+              alt="Blog Post"
+              fill
+              sizes="(max-width: 768px) 100vw, 50vw"
+              className="object-cover group-hover:scale-110 transition-transform duration-500 opacity-80 group-hover:opacity-70"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent p-4 flex flex-col justify-end">
+              <h3 className="text-sm font-serif font-bold text-white group-hover:text-amber-300 transition-colors">
+                Choosing the Perfect Bridal Lehenga
+              </h3>
+              <p className="text-[10px] text-gray-300 line-clamp-2 mt-1 font-light">
+                Discover essential guidelines on selecting the perfect bridal lehenga.
+              </p>
+              <span className="text-[9px] font-bold text-amber-300 mt-2 uppercase tracking-wider">
+                Read More ➔
+              </span>
+            </div>
+          </Link>
+          <Link href="/blog/orthopedic-vs-memory-foam-mattress" className="group relative h-48 rounded-lg overflow-hidden shadow-sm block bg-neutral-900">
+            <Image
+              src="https://images.unsplash.com/photo-1631049307264-da0ec9d70304?q=80&w=800"
+              alt="Blog Post"
+              fill
+              sizes="(max-width: 768px) 100vw, 50vw"
+              className="object-cover group-hover:scale-110 transition-transform duration-500 opacity-80 group-hover:opacity-70"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent p-4 flex flex-col justify-end">
+              <h3 className="text-sm font-serif font-bold text-white group-hover:text-amber-300 transition-colors">
+                Traditional vs Modern Bridal Wear
+              </h3>
+              <p className="text-[10px] text-gray-300 line-clamp-2 mt-1 font-light">
+                Understand the key differences between traditional ethnic wear and modern bridal fashion.
+              </p>
+              <span className="text-[9px] font-bold text-amber-300 mt-2 uppercase tracking-wider">
+                Read More ➔
+              </span>
+            </div>
+          </Link>
+        </div>
+      </section>
+
       {/* Value Guarantee & Coupon Banner */}
-      <section className="bg-[#580520] text-white rounded-md p-8 sm:p-12 flex flex-col sm:flex-row items-center justify-between gap-6 shadow-xl border border-amber-900/50">
-        <div className="space-y-2 text-center sm:text-left">
-          <span className="bg-amber-400 text-black text-[10px] font-bold px-3 py-1 rounded-xs uppercase tracking-widest">
+      <section className="bg-[#580520] text-white rounded-md p-6 sm:p-8 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-xl border border-amber-900/50">
+        <div className="space-y-1 text-center sm:text-left">
+          <span className="bg-amber-400 text-black text-[9px] font-bold px-2 py-0.5 rounded-xs uppercase tracking-widest">
             ✦ Value Guarantee Promotion
           </span>
-          <h2 className="text-2xl sm:text-4xl font-serif font-bold text-amber-200">
+          <h2 className="text-lg sm:text-2xl font-serif font-bold text-amber-200">
             Enjoy 10% Off Orders Over $50
           </h2>
-          <p className="text-amber-100 text-xs sm:text-sm">
-            Use code <span className="font-mono font-bold bg-white text-[#580520] px-2 py-0.5 rounded">BRIDAL10</span> at checkout for instant savings!
+          <p className="text-amber-100 text-[10px] sm:text-xs">
+            Use code <span className="font-mono font-bold bg-white text-[#580520] px-1.5 py-0.5 rounded text-[10px]">BRIDAL10</span> at checkout!
           </p>
         </div>
         <Link
           href="/shop"
-          className="px-8 py-3.5 bg-amber-400 hover:bg-amber-300 text-black font-extrabold text-xs uppercase tracking-wider rounded-xs shrink-0 shadow-lg"
+          className="px-6 py-2.5 bg-amber-400 hover:bg-amber-300 text-black font-extrabold text-[10px] uppercase tracking-wider rounded-xs shrink-0 shadow-lg"
         >
           Claim Savings Now
         </Link>
       </section>
+      </div>
     </div>
   );
 }
