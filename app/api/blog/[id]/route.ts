@@ -3,13 +3,14 @@ import { prisma } from '@/lib/prisma';
 import { NextRequest } from 'next/server';
 
 // PUT /api/blog/[id] - Update blog post
-export async function PUT(request: NextRequest, { params }: { params: { id: string } }) {
+export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const { id } = await params;
     const body = await request.json();
     const { title, slug, excerpt, content, imageUrl, published } = body;
 
     const blog = await prisma.blog.update({
-      where: { id: params.id },
+      where: { id },
       data: {
         title,
         slug,
@@ -28,10 +29,11 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
 }
 
 // DELETE /api/blog/[id] - Delete blog post
-export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const { id } = await params;
     await prisma.blog.delete({
-      where: { id: params.id },
+      where: { id },
     });
 
     return NextResponse.json({ success: true });

@@ -44,7 +44,6 @@ export default async function ContactAdminPage() {
               <th className="p-3">ID</th>
               <th className="p-3">Name</th>
               <th className="p-3">Email</th>
-              <th className="p-3">Phone</th>
               <th className="p-3">Subject</th>
               <th className="p-3">Message</th>
               <th className="p-3">Date</th>
@@ -57,7 +56,6 @@ export default async function ContactAdminPage() {
                 <td className="p-3 font-mono font-bold text-gray-900">{msg.id}</td>
                 <td className="p-3 font-medium text-gray-800">{msg.name || 'N/A'}</td>
                 <td className="p-3 font-medium text-gray-800">{msg.email}</td>
-                <td className="p-3 text-gray-600">{msg.phone || 'N/A'}</td>
                 <td className="p-3 text-gray-600">{msg.subject || 'N/A'}</td>
                 <td className="p-3 text-gray-600 max-w-xs truncate">{msg.message || 'N/A'}</td>
                 <td className="p-3 text-gray-500">{new Date(msg.createdAt).toLocaleDateString()}</td>
