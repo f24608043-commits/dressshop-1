@@ -41,7 +41,7 @@ export function Header() {
           {/* Logo */}
           <Link href="/" className="flex items-center gap-2">
             <span className="text-2xl sm:text-3xl font-serif font-bold tracking-widest text-[#580520] uppercase">
-              CBAZAAR<span className="text-amber-600 font-sans text-xs tracking-normal block text-right font-normal">BRIDAL COUTURE</span>
+              Golden Lehnga
             </span>
           </Link>
 

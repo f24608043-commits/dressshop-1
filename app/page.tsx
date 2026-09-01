@@ -46,7 +46,7 @@ export default async function HomePage() {
       <HeroSection />
 
       {/* Content Container - applies to all sections below hero */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+      <div className="space-y-8">
         {/* Shop By Category Section */}
         <section className="space-y-4">
           <div className="text-center space-y-1 border-b border-gray-200 pb-3">

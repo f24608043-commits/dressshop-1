@@ -96,7 +96,7 @@ export function ScrollAnimation({ className = '', children, scrollSectionRef }: 
     // Set canvas size
     const resizeCanvas = () => {
       const rect = container.getBoundingClientRect();
-      const dpr = Math.min(window.devicePixelRatio || 1, 2); // Cap at 2x for performance
+      const dpr = window.devicePixelRatio || 1; // Use full device pixel ratio for high quality
       
       canvas.width = rect.width * dpr;
       canvas.height = rect.height * dpr;
@@ -183,7 +183,7 @@ export function ScrollAnimation({ className = '', children, scrollSectionRef }: 
       const ctx = canvas.getContext('2d');
       if (ctx && containerRef.current) {
         const rect = containerRef.current.getBoundingClientRect();
-        const dpr = Math.min(window.devicePixelRatio || 1, 2);
+        const dpr = window.devicePixelRatio || 1;
         
         canvas.width = rect.width * dpr;
         canvas.height = rect.height * dpr;
@@ -234,19 +234,9 @@ export function ScrollAnimation({ className = '', children, scrollSectionRef }: 
 
   return (
     <div ref={containerRef} className={`relative ${className}`}>
-      {isLoading && (
-        <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-[#1a0a0a] via-[#2d1515] to-[#1a0a0a] text-white">
-          <div className="text-center space-y-2">
-            <div className="w-8 h-8 border-2 border-amber-400 border-t-transparent rounded-full animate-spin mx-auto" />
-            <p className="text-xs text-amber-300">Loading experience...</p>
-            <p className="text-[10px] text-gray-400">{frames.length} / {TOTAL_FRAMES} frames</p>
-          </div>
-        </div>
-      )}
       <canvas
         ref={canvasRef}
         className="w-full h-full"
-        style={{ display: isLoading ? 'none' : 'block' }}
       />
       {children}
     </div>

@@ -21,29 +21,19 @@ export function HeroSection() {
           >
             {/* Hero Content Overlay - Positioned to use negative space on left */}
             <div className="absolute inset-0 z-10 flex items-center">
-              <div className="relative z-10 max-w-xl px-8 sm:px-12 lg:px-16 py-8 space-y-5 w-full text-left" style={{ marginLeft: '8%' }}>
+              <div className="relative z-10 max-w-xl px-8 sm:px-12 lg:px-16 py-8 space-y-6 w-full text-left" style={{ marginLeft: '8%' }}>
                 <span className="inline-block bg-amber-400/20 text-amber-300 text-[10px] font-bold px-3 py-1 rounded-full border border-amber-400/40 uppercase tracking-widest">
                   ✦ Heritage Bridal Collection 2026
                 </span>
-                <h1 className="text-4xl sm:text-5xl lg:text-7xl font-serif font-bold tracking-wide leading-tight">
-                  Less Ordinary, <br />
-                  <span className="text-amber-300 italic">More Artfully Yours.</span>
+                <h1 className="text-5xl sm:text-6xl lg:text-8xl font-serif font-bold tracking-wide leading-tight text-white">
+                  Golden Lehnga House
                 </h1>
-                <p className="text-gray-200 text-sm sm:text-base lg:text-lg leading-relaxed max-w-lg font-light">
-                  Handcrafted Zardozi Lehengas, Real Kundan Jewellery, & Custom Made-to-Measure Ethnic Ensembles.
-                </p>
                 <div className="flex flex-wrap gap-4 pt-4">
                   <Link
-                    href="/shop?category=bridal-lehengas"
-                    className="px-8 py-3 bg-[#580520] hover:bg-[#7b113a] text-amber-200 font-bold text-xs uppercase tracking-wider rounded-sm shadow-xl transition-all duration-300 hover:scale-105 hover:shadow-2xl"
+                    href="/shop"
+                    className="px-10 py-4 bg-[#580520] hover:bg-[#7b113a] text-amber-200 font-bold text-sm uppercase tracking-wider rounded-sm shadow-xl transition-all duration-300 hover:scale-105 hover:shadow-2xl"
                   >
-                    Explore Lehengas ➔
-                  </Link>
-                  <Link
-                    href="/shop?category=bridal-jewellery"
-                    className="px-8 py-3 bg-white/10 hover:bg-white/20 text-white font-bold text-xs uppercase tracking-wider rounded-sm transition-all duration-300 border border-white/30 hover:border-amber-400/50"
-                  >
-                    Kundan Jewels
+                    Shop Now ➔
                   </Link>
                 </div>
               </div>

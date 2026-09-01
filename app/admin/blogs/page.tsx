@@ -1,42 +1,52 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 
 interface BlogPost {
   id: string;
   title: string;
   slug: string;
   excerpt: string;
+  content?: string;
+  imageUrl?: string;
   published: boolean;
   createdAt: string;
 }
 
 export default function AdminBlogsPage() {
-  const [blogs, setBlogs] = useState<BlogPost[]>([
-    {
-      id: '1',
-      title: 'Choosing the Perfect Bridal Lehenga',
-      slug: 'choosing-the-perfect-bridal-lehenga',
-      excerpt: 'Discover essential guidelines on selecting the perfect bridal lehenga for your special day.',
-      published: true,
-      createdAt: new Date().toISOString(),
-    },
-    {
-      id: '2',
-      title: 'Traditional vs Modern Bridal Wear',
-      slug: 'traditional-vs-modern-bridal-wear',
-      excerpt: 'Understand the key differences between traditional ethnic wear and modern bridal fashion.',
-      published: true,
-      createdAt: new Date().toISOString(),
-    },
-  ]);
-
+  const [blogs, setBlogs] = useState<BlogPost[]>([]);
+  const [loading, setLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
   const [editingBlog, setEditingBlog] = useState<BlogPost | null>(null);
 
-  const handleDelete = (id: string) => {
+  useEffect(() => {
+    fetchBlogs();
+  }, []);
+
+  const fetchBlogs = async () => {
+    try {
+      const res = await fetch('/api/blog');
+      if (res.ok) {
+        const data = await res.json();
+        setBlogs(data);
+      }
+    } catch (error) {
+      console.error('Failed to fetch blogs:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDelete = async (id: string) => {
     if (confirm('Are you sure you want to delete this blog post?')) {
-      setBlogs(blogs.filter((blog) => blog.id !== id));
+      try {
+        const res = await fetch(`/api/blog/${id}`, { method: 'DELETE' });
+        if (res.ok) {
+          setBlogs(blogs.filter((blog) => blog.id !== id));
+        }
+      } catch (error) {
+        console.error('Failed to delete blog:', error);
+      }
     }
   };
 
@@ -45,18 +55,58 @@ export default function AdminBlogsPage() {
     setIsEditing(true);
   };
 
-  const handleSave = (e: React.FormEvent) => {
+  const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (editingBlog) {
-      setBlogs(blogs.map((b) => (b.id === editingBlog.id ? editingBlog : b)));
+    if (!editingBlog) return;
+
+    try {
+      const isExisting = blogs.some(b => b.id === editingBlog.id);
+      const url = isExisting ? `/api/blog/${editingBlog.id}` : '/api/blog';
+      const method = isExisting ? 'PUT' : 'POST';
+
+      const res = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(editingBlog),
+      });
+
+      if (res.ok) {
+        const savedBlog = await res.json();
+        if (isExisting) {
+          setBlogs(blogs.map((b) => (b.id === editingBlog.id ? savedBlog : b)));
+        } else {
+          setBlogs([savedBlog, ...blogs]);
+        }
+        setIsEditing(false);
+        setEditingBlog(null);
+      }
+    } catch (error) {
+      console.error('Failed to save blog:', error);
     }
-    setIsEditing(false);
-    setEditingBlog(null);
   };
 
-  const handleTogglePublish = (id: string) => {
-    setBlogs(blogs.map((b) => (b.id === id ? { ...b, published: !b.published } : b)));
+  const handleTogglePublish = async (id: string) => {
+    const blog = blogs.find(b => b.id === id);
+    if (!blog) return;
+
+    try {
+      const res = await fetch(`/api/blog/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...blog, published: !blog.published }),
+      });
+
+      if (res.ok) {
+        setBlogs(blogs.map((b) => (b.id === id ? { ...b, published: !b.published } : b)));
+      }
+    } catch (error) {
+      console.error('Failed to toggle publish:', error);
+    }
   };
+
+  if (loading) {
+    return <div className="text-center py-12">Loading...</div>;
+  }
 
   return (
     <div className="space-y-6">
@@ -68,10 +118,12 @@ export default function AdminBlogsPage() {
         <button
           onClick={() => {
             setEditingBlog({
-              id: Date.now().toString(),
+              id: '',
               title: '',
               slug: '',
               excerpt: '',
+              content: '',
+              imageUrl: '',
               published: false,
               createdAt: new Date().toISOString(),
             });
@@ -117,6 +169,26 @@ export default function AdminBlogsPage() {
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg"
                 rows={3}
                 required
+              />
+            </div>
+            <div>
+              <label className="font-bold text-gray-700 block mb-1">Content *</label>
+              <textarea
+                value={editingBlog.content}
+                onChange={(e) => setEditingBlog({ ...editingBlog, content: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                rows={10}
+                required
+              />
+            </div>
+            <div>
+              <label className="font-bold text-gray-700 block mb-1">Image URL</label>
+              <input
+                type="text"
+                value={editingBlog.imageUrl}
+                onChange={(e) => setEditingBlog({ ...editingBlog, imageUrl: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                placeholder="https://..."
               />
             </div>
             <div className="flex items-center gap-2">
