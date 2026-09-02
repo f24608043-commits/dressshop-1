@@ -38,13 +38,6 @@ export default function LoginPage() {
         <p className="text-xs text-gray-500">Enter your credentials to access your account & orders.</p>
       </div>
 
-      {/* Demo Credentials Box */}
-      <div className="bg-amber-50 border border-amber-200 p-4 rounded-xl text-xs text-amber-900 space-y-1">
-        <p className="font-bold">👑 Admin Credentials:</p>
-        <p>Email: <code className="font-mono bg-amber-100 px-1 rounded">alexabraham587@gmail.com</code></p>
-        <p>Password: <code className="font-mono bg-amber-100 px-1 rounded">Qasim.11</code></p>
-      </div>
-
       <form onSubmit={handleLogin} className="bg-white p-8 rounded-2xl border border-gray-200 space-y-4 shadow-sm text-xs">
         <div>
           <label className="font-bold text-gray-700 block mb-1">Email Address *</label>

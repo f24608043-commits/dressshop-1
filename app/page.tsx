@@ -5,7 +5,7 @@ import { prisma } from '@/lib/prisma';
 import { ProductCard } from '@/components/product/product-card';
 import { HeroSection } from '@/components/hero-section';
 
-export const revalidate = 60; // SSR with 60s revalidation
+export const dynamic = 'force-dynamic';
 
 export default async function HomePage() {
   const [featuredProducts, categories, allProducts] = await Promise.all([

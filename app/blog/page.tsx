@@ -3,6 +3,8 @@ import { prisma } from '@/lib/prisma';
 import Link from 'next/link';
 import Image from 'next/image';
 
+export const dynamic = 'force-dynamic';
+
 export default async function BlogPage() {
   const blogs = await prisma.blog.findMany({
     where: { published: true },
