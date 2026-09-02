@@ -2,6 +2,8 @@ import React from 'react';
 import { prisma } from '@/lib/prisma';
 import { AdminReviewsClient } from './admin-reviews-client';
 
+export const dynamic = 'force-dynamic';
+
 export default async function AdminReviewsPage() {
   const reviews = await prisma.review.findMany({
     include: { product: true, user: true },

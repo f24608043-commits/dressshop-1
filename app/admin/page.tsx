@@ -2,6 +2,8 @@ import React from 'react';
 import Link from 'next/link';
 import { prisma } from '@/lib/prisma';
 
+export const dynamic = 'force-dynamic';
+
 export default async function AdminDashboardPage() {
   // Query total metrics
   const [totalProducts, totalOrders, totalUsers, pendingOrders, recentOrders] = await Promise.all([
