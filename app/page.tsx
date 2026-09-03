@@ -1,37 +1,35 @@
 import React from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { prisma } from '@/lib/prisma';
+import { createClient } from '@/lib/supabase/server';
 import { ProductCard } from '@/components/product/product-card';
 import { HeroSection } from '@/components/hero-section';
 
 export const dynamic = 'force-dynamic';
 
 export default async function HomePage() {
+  const supabase = await createClient();
   const [featuredProducts, categories, allProducts] = await Promise.all([
-    prisma.product.findMany({
-      where: { featured: true },
-      include: {
-        images: { orderBy: { order: 'asc' } },
-        category: true,
-        brand: true,
-        reviews: { where: { approved: true }, select: { rating: true } },
-      },
-      take: 6,
-    }),
-    prisma.category.findMany({
-      where: { parentCategoryId: null },
-      take: 6,
-    }),
-    prisma.product.findMany({
-      include: {
-        images: { orderBy: { order: 'asc' } },
-        category: true,
-        brand: true,
-        reviews: { where: { approved: true }, select: { rating: true } },
-      },
-    }),
+    supabase
+      .from('products')
+      .select('*, images:product_images(*), category:categories(*), brand:brands(*), reviews:reviews(rating)')
+      .eq('featured', true)
+      .order('created_at', { ascending: false })
+      .limit(6),
+    supabase
+      .from('categories')
+      .select('*')
+      .is('parent_category_id', null)
+      .limit(6),
+    supabase
+      .from('products')
+      .select('*, images:product_images(*), category:categories(*), brand:brands(*), reviews:reviews(rating)')
+      .order('created_at', { ascending: false }),
   ]);
+
+  const categoriesData = categories?.data || [];
+  const featuredProductsData = featuredProducts?.data || [];
+  const allProductsData = allProducts?.data || [];
 
   const occasions = [
     { title: 'Wedding Reception', image: 'https://images.unsplash.com/photo-1610030469983-98e550d6193c?q=80&w=800', slug: 'bridal-lehengas' },
@@ -59,14 +57,14 @@ export default async function HomePage() {
         </div>
 
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
-          {categories.map((cat) => (
+          {categoriesData.map((cat: any) => (
             <Link
               key={cat.id}
               href={`/shop?category=${cat.slug}`}
               className="group relative h-48 rounded-lg overflow-hidden shadow-sm block bg-neutral-900"
             >
               <Image
-                src={cat.heroBannerImageUrl || 'https://images.unsplash.com/photo-1610030469983-98e550d6193c?q=80&w=800'}
+                src={cat.hero_banner_image_url || 'https://images.unsplash.com/photo-1610030469983-98e550d6193c?q=80&w=800'}
                 alt={cat.name}
                 fill
                 sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
@@ -133,24 +131,24 @@ export default async function HomePage() {
         </div>
 
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
-          {featuredProducts.map((prod) => (
+          {featuredProductsData.map((prod: any) => (
             <ProductCard
               key={prod.id}
               id={prod.id}
               name={prod.name}
               slug={prod.slug}
-              basePrice={Number(prod.basePrice)}
-              originalPrice={prod.originalPrice ? Number(prod.originalPrice) : null}
-              productType={prod.productType}
+              basePrice={Number(prod.base_price)}
+              originalPrice={prod.original_price ? Number(prod.original_price) : null}
+              productType={prod.product_type}
               images={prod.images}
               category={prod.category}
               brand={prod.brand}
               averageRating={
-                prod.reviews.length > 0
-                  ? Math.round((prod.reviews.reduce((acc, r) => acc + r.rating, 0) / prod.reviews.length) * 10) / 10
+                prod.reviews && prod.reviews.length > 0
+                  ? Math.round((prod.reviews.reduce((acc: number, r: any) => acc + r.rating, 0) / prod.reviews.length) * 10) / 10
                   : 5.0
               }
-              totalReviews={prod.reviews.length || 15}
+              totalReviews={prod.reviews?.length || 15}
             />
           ))}
         </div>
@@ -166,24 +164,24 @@ export default async function HomePage() {
         </div>
 
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
-          {allProducts.map((prod) => (
+          {allProductsData.map((prod: any) => (
             <ProductCard
               key={prod.id}
               id={prod.id}
               name={prod.name}
               slug={prod.slug}
-              basePrice={Number(prod.basePrice)}
-              originalPrice={prod.originalPrice ? Number(prod.originalPrice) : null}
-              productType={prod.productType}
+              basePrice={Number(prod.base_price)}
+              originalPrice={prod.original_price ? Number(prod.original_price) : null}
+              productType={prod.product_type}
               images={prod.images}
               category={prod.category}
               brand={prod.brand}
               averageRating={
-                prod.reviews.length > 0
-                  ? Math.round((prod.reviews.reduce((acc, r) => acc + r.rating, 0) / prod.reviews.length) * 10) / 10
+                prod.reviews && prod.reviews.length > 0
+                  ? Math.round((prod.reviews.reduce((acc: number, r: any) => acc + r.rating, 0) / prod.reviews.length) * 10) / 10
                   : 5.0
               }
-              totalReviews={prod.reviews.length || 15}
+              totalReviews={prod.reviews?.length || 15}
             />
           ))}
         </div>

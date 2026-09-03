@@ -1,12 +1,15 @@
 import React from 'react';
-import { prisma } from '@/lib/prisma';
+import { createClient } from '@/lib/supabase/server';
 
 export const dynamic = 'force-dynamic';
 
 export default async function AdminSubscribersPage() {
-  const subscribers = await prisma.contactMessage.findMany({
-    orderBy: { createdAt: 'desc' },
-  });
+  const supabase = await createClient();
+
+  const { data: subscribers } = await supabase
+    .from('subscribers')
+    .select('*')
+    .order('subscribed_at', { ascending: false });
 
   return (
     <div className="space-y-6">
@@ -16,7 +19,7 @@ export default async function AdminSubscribersPage() {
           <p className="text-xs text-gray-500 mt-1">Manage email subscribers and contact messages.</p>
         </div>
         <div className="text-sm font-bold text-gray-700">
-          Total: {subscribers.length}
+          Total: {(subscribers || []).length}
         </div>
       </div>
 
@@ -33,13 +36,13 @@ export default async function AdminSubscribersPage() {
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
-            {subscribers.map((sub) => (
+            {(subscribers || []).map((sub: any) => (
               <tr key={sub.id} className="hover:bg-gray-50">
                 <td className="p-3 font-mono font-bold text-gray-900">{sub.id}</td>
                 <td className="p-3 font-medium text-gray-800">{sub.name || 'N/A'}</td>
                 <td className="p-3 font-medium text-gray-800">{sub.email}</td>
                 <td className="p-3 text-gray-600 max-w-xs truncate">{sub.message || 'N/A'}</td>
-                <td className="p-3 text-gray-500">{new Date(sub.createdAt).toLocaleDateString()}</td>
+                <td className="p-3 text-gray-500">{new Date(sub.subscribed_at || sub.created_at).toLocaleDateString()}</td>
                 <td className="p-3">
                   <button className="px-2 py-1 bg-red-600 hover:bg-red-700 text-white text-xs font-bold rounded">
                     Delete
@@ -51,7 +54,7 @@ export default async function AdminSubscribersPage() {
         </table>
       </div>
 
-      {subscribers.length === 0 && (
+      {(subscribers || []).length === 0 && (
         <div className="text-center py-12 text-gray-500">
           <p className="text-sm">No subscribers or contact messages found.</p>
         </div>

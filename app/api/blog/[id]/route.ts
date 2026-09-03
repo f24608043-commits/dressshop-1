@@ -1,25 +1,33 @@
 import { NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
+import { createClient } from '@/lib/supabase/server';
 import { NextRequest } from 'next/server';
 
 // PUT /api/blog/[id] - Update blog post
 export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params;
+    const supabase = await createClient();
     const body = await request.json();
     const { title, slug, excerpt, content, imageUrl, published } = body;
 
-    const blog = await prisma.blog.update({
-      where: { id },
-      data: {
+    const { data: blog, error } = await supabase
+      .from('blogs')
+      .update({
         title,
         slug,
         excerpt,
         content,
-        imageUrl,
+        image_url: imageUrl,
         published,
-      },
-    });
+      })
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Supabase update error:', error);
+      return NextResponse.json({ error: 'Failed to update blog post' }, { status: 500 });
+    }
 
     return NextResponse.json(blog);
   } catch (error) {
@@ -32,9 +40,17 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
 export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params;
-    await prisma.blog.delete({
-      where: { id },
-    });
+    const supabase = await createClient();
+
+    const { error } = await supabase
+      .from('blogs')
+      .delete()
+      .eq('id', id);
+
+    if (error) {
+      console.error('Supabase delete error:', error);
+      return NextResponse.json({ error: 'Failed to delete blog post' }, { status: 500 });
+    }
 
     return NextResponse.json({ success: true });
   } catch (error) {

@@ -1,11 +1,13 @@
-import { getServerSession } from 'next-auth';
 import { NextResponse } from 'next/server';
-import { authOptions } from '@/lib/auth';
+import { createClient } from '@/lib/supabase/server';
+import { getUserRole } from '@/lib/supabase/auth';
 
 export async function requireAdmin() {
-  const session = await getServerSession(authOptions);
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  const role = await getUserRole();
 
-  if (!session || !session.user) {
+  if (!user) {
     return {
       authorized: false as const,
       response: NextResponse.json(
@@ -15,7 +17,7 @@ export async function requireAdmin() {
     };
   }
 
-  if (session.user.role !== 'ADMIN') {
+  if (role !== 'ADMIN') {
     return {
       authorized: false as const,
       response: NextResponse.json(
@@ -27,6 +29,6 @@ export async function requireAdmin() {
 
   return {
     authorized: true as const,
-    user: session.user,
+    user,
   };
 }

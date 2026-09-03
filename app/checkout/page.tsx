@@ -3,15 +3,15 @@
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useCart } from '@/components/providers/cart-context';
-import { useSession } from 'next-auth/react';
+import { useAuth } from '@/components/providers/auth-provider';
 
 export default function CheckoutPage() {
   const router = useRouter();
-  const { data: session } = useSession();
+  const { session } = useAuth();
   const { items, subtotal, clearCart } = useCart();
 
   const [formData, setFormData] = useState({
-    customerName: session?.user?.name || '',
+    customerName: session?.user?.user_metadata?.name || '',
     customerEmail: session?.user?.email || '',
     phone: '',
     address: '',

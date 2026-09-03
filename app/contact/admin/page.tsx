@@ -1,19 +1,20 @@
 import React from 'react';
-import { prisma } from '@/lib/prisma';
-import { getServerSession } from 'next-auth';
+import { createClient } from '@/lib/supabase/server';
+import { getUserRole } from '@/lib/supabase/auth';
 import { redirect } from 'next/navigation';
-import { authOptions } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';
 
 export default async function ContactAdminPage() {
-  const session = await getServerSession(authOptions);
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  const role = await getUserRole();
 
-  if (!session || !session.user) {
+  if (!user) {
     redirect('/login?callbackUrl=/contact/admin');
   }
 
-  if (session.user.role !== 'ADMIN') {
+  if (role !== 'ADMIN') {
     return (
       <div className="text-center py-24 space-y-4 max-w-md mx-auto">
         <span className="text-5xl block">⛔</span>
@@ -23,9 +24,10 @@ export default async function ContactAdminPage() {
     );
   }
 
-  const contactMessages = await prisma.contactMessage.findMany({
-    orderBy: { createdAt: 'desc' },
-  });
+  const { data: contactMessages } = await supabase
+    .from('contact_messages')
+    .select('*')
+    .order('created_at', { ascending: false });
 
   return (
     <div className="space-y-6">
@@ -35,7 +37,7 @@ export default async function ContactAdminPage() {
           <p className="text-xs text-gray-500 mt-1">View and manage customer contact queries.</p>
         </div>
         <div className="text-sm font-bold text-gray-700">
-          Total: {contactMessages.length}
+          Total: {(contactMessages || []).length}
         </div>
       </div>
 
@@ -53,14 +55,14 @@ export default async function ContactAdminPage() {
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
-            {contactMessages.map((msg) => (
+            {(contactMessages || []).map((msg: any) => (
               <tr key={msg.id} className="hover:bg-gray-50">
                 <td className="p-3 font-mono font-bold text-gray-900">{msg.id}</td>
                 <td className="p-3 font-medium text-gray-800">{msg.name || 'N/A'}</td>
                 <td className="p-3 font-medium text-gray-800">{msg.email}</td>
                 <td className="p-3 text-gray-600">{msg.subject || 'N/A'}</td>
                 <td className="p-3 text-gray-600 max-w-xs truncate">{msg.message || 'N/A'}</td>
-                <td className="p-3 text-gray-500">{new Date(msg.createdAt).toLocaleDateString()}</td>
+                <td className="p-3 text-gray-500">{new Date(msg.created_at).toLocaleDateString()}</td>
                 <td className="p-3">
                   <button className="px-2 py-1 bg-red-600 hover:bg-red-700 text-white text-xs font-bold rounded">
                     Delete
@@ -72,7 +74,7 @@ export default async function ContactAdminPage() {
         </table>
       </div>
 
-      {contactMessages.length === 0 && (
+      {(!contactMessages || contactMessages.length === 0) && (
         <div className="text-center py-12 text-gray-500">
           <p className="text-sm">No contact messages found.</p>
         </div>

@@ -1,18 +1,20 @@
 import React from 'react';
 import Link from 'next/link';
-import { getServerSession } from 'next-auth';
+import { createClient } from '@/lib/supabase/server';
+import { getUserRole } from '@/lib/supabase/auth';
 import { redirect } from 'next/navigation';
-import { authOptions } from '@/lib/auth';
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
-  const session = await getServerSession(authOptions);
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  const role = await getUserRole();
 
   // Server-side protection
-  if (!session || !session.user) {
+  if (!user) {
     redirect('/login?callbackUrl=/admin');
   }
 
-  if (session.user.role !== 'ADMIN') {
+  if (role !== 'ADMIN') {
     return (
       <div className="text-center py-24 space-y-4 max-w-md mx-auto">
         <span className="text-5xl block">⛔</span>
@@ -63,7 +65,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
 
         <div className="pt-4 border-t border-neutral-800 text-[11px] text-gray-400 space-y-1">
           <p className="font-bold text-gray-300">Signed in as:</p>
-          <p className="truncate text-amber-400">{session.user.email}</p>
+          <p className="truncate text-amber-400">{user.email}</p>
           <Link href="/" className="inline-block text-xs font-bold text-gray-300 hover:text-white pt-2">
             ← View Customer Storefront
           </Link>

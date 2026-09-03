@@ -2,8 +2,8 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { signIn } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
+import { supabase } from '@/lib/supabase/client';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -17,17 +17,30 @@ export default function LoginPage() {
     setLoading(true);
     setError(null);
 
-    const res = await signIn('credentials', {
+    const { data, error: signInError } = await supabase.auth.signInWithPassword({
       email,
       password,
-      redirect: false,
     });
 
-    if (res?.error) {
+    if (signInError) {
       setError('Invalid email or password credentials.');
       setLoading(false);
     } else {
       router.push('/account');
+      router.refresh();
+    }
+  };
+
+  const handleGoogleLogin = async () => {
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: `${window.location.origin}/account`,
+      },
+    });
+
+    if (error) {
+      setError('Google sign-in failed. Please try again.');
     }
   };
 
@@ -82,7 +95,7 @@ export default function LoginPage() {
 
         <button
           type="button"
-          onClick={() => signIn('google', { callbackUrl: '/account' })}
+          onClick={handleGoogleLogin}
           className="w-full py-3 bg-white hover:bg-gray-50 text-gray-700 font-bold text-xs rounded-xl border border-gray-300 shadow flex items-center justify-center gap-2"
         >
           <svg className="w-5 h-5" viewBox="0 0 24 24">

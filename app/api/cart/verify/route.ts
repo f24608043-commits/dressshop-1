@@ -1,10 +1,11 @@
 import { NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
+import { createClient } from '@/lib/supabase/server';
 import { cartVerifySchema } from '@/lib/validations/coupon-cart';
 
 // POST /api/cart/verify - Server-side Cart Price & Stock Verification
 export async function POST(req: Request) {
   try {
+    const supabase = await createClient();
     const body = await req.json();
     const validatedData = cartVerifySchema.safeParse(body);
 
@@ -23,36 +24,28 @@ export async function POST(req: Request) {
 
     for (const item of items) {
       // 1. Fetch Product
-      const product = await prisma.product.findUnique({
-        where: { id: item.productId },
-        include: {
-          images: { orderBy: { order: 'asc' }, take: 1 },
-        },
-      });
+      const { data: product } = await supabase
+        .from('products')
+        .select(`*, images:product_images(*)`)
+        .eq('id', item.productId)
+        .single();
 
       if (!product) {
         stockErrors.push(`Product ID ${item.productId} is no longer available.`);
         continue;
       }
 
-      let unitPrice = Number(product.basePrice);
+      let unitPrice = Number(product.base_price);
       let availableStock = product.stock ?? 0;
       let variationDetails = null;
 
       // 2. If VARIABLE product, fetch variation
-      if (product.productType === 'VARIABLE' && item.variationId) {
-        const variation = await prisma.productVariation.findUnique({
-          where: { id: item.variationId },
-          include: {
-            values: {
-              include: {
-                optionValue: {
-                  include: { option: true },
-                },
-              },
-            },
-          },
-        });
+      if (product.product_type === 'VARIABLE' && item.variationId) {
+        const { data: variation } = await supabase
+          .from('product_variations')
+          .select('*, values:product_variation_values(*)')
+          .eq('id', item.variationId)
+          .single();
 
         if (!variation) {
           stockErrors.push(`Selected variation for "${product.name}" is no longer available.`);
@@ -62,9 +55,9 @@ export async function POST(req: Request) {
         unitPrice = Number(variation.price);
         availableStock = variation.stock;
         
-        // Format option summary (e.g. "Size: 5ft, Fabric: Velvet, Color: Beige")
+        // Format选项摘要 (e.g. "Size: 5ft, Fabric: Velvet, Color: Beige")
         variationDetails = variation.values
-          .map((v) => `${v.optionValue.option.name}: ${v.optionValue.value}`)
+          ?.map((v: any) => `${v.option_value?.option?.name || v.title}: ${v.option_value?.value || v.value}`)
           .join(', ');
       }
 
@@ -83,7 +76,7 @@ export async function POST(req: Request) {
         variationId: item.variationId || null,
         productName: product.name,
         productSlug: product.slug,
-        image: product.images[0]?.url || '/placeholder.jpg',
+        image: product.images?.[0]?.url || '/placeholder.jpg',
         variationDetails,
         quantity: item.quantity,
         unitPrice,

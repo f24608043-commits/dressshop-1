@@ -1,13 +1,16 @@
 import React from 'react';
-import { prisma } from '@/lib/prisma';
+import { createClient } from '@/lib/supabase/server';
 import { notFound } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
 
 export default async function BlogPostPage({ params }: { params: { slug: string } }) {
-  const blog = await prisma.blog.findUnique({
-    where: { slug: params.slug },
-  });
+  const supabase = await createClient();
+  const { data: blog } = await supabase
+    .from('blogs')
+    .select('*')
+    .eq('slug', params.slug)
+    .single();
 
   if (!blog || !blog.published) {
     notFound();
@@ -22,10 +25,10 @@ export default async function BlogPostPage({ params }: { params: { slug: string 
         ← Back to Blog
       </Link>
 
-      {blog.imageUrl && (
+      {blog.image_url && (
         <div className="relative h-64 md:h-96 w-full rounded-xl overflow-hidden mb-8">
           <Image
-            src={blog.imageUrl}
+            src={blog.image_url}
             alt={blog.title}
             fill
             sizes="(max-width: 768px) 100vw, 900px"
@@ -37,7 +40,7 @@ export default async function BlogPostPage({ params }: { params: { slug: string 
 
       <div className="mb-4">
         <span className="text-sm text-gray-500">
-          {new Date(blog.createdAt).toLocaleDateString('en-US', {
+          {new Date(blog.created_at).toLocaleDateString('en-US', {
             month: 'long',
             day: 'numeric',
             year: 'numeric'

@@ -1,14 +1,16 @@
 import React from 'react';
-import { prisma } from '@/lib/prisma';
+import { createClient } from '@/lib/supabase/server';
 import { AdminReviewsClient } from './admin-reviews-client';
 
 export const dynamic = 'force-dynamic';
 
 export default async function AdminReviewsPage() {
-  const reviews = await prisma.review.findMany({
-    include: { product: true, user: true },
-    orderBy: { createdAt: 'desc' },
-  });
+  const supabase = await createClient();
+
+  const { data: reviews } = await supabase
+    .from('reviews')
+    .select('*, product:products(name, slug), user:profiles(name, email)')
+    .order('created_at', { ascending: false });
 
   return (
     <div className="space-y-6">

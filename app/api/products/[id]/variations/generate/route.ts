@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
+import { createClient } from '@/lib/supabase/server';
 import { requireAdmin } from '@/lib/admin-auth';
-import type { ProductOptionValue } from '@prisma/client';
 
 // Helper function to generate Cartesian Product of arrays
 function cartesianProduct<T>(arrays: T[][]): T[][] {
@@ -23,22 +22,20 @@ export async function POST(
     }
 
     const { id: productId } = await params;
+    const supabase = await createClient();
 
     // Fetch product with linked product options
-    const product = await prisma.product.findUnique({
-      where: { id: productId },
-      include: {
-        options: {
-          include: { values: true },
-        },
-      },
-    });
+    const { data: product } = await supabase
+      .from('products')
+      .select('*, options:product_options(*, values:product_option_values(*))')
+      .eq('id', productId)
+      .single();
 
     if (!product) {
       return NextResponse.json({ error: 'Product not found' }, { status: 404 });
     }
 
-    const allOptionGroups = product.options;
+    const allOptionGroups = product.options || [];
 
     if (allOptionGroups.length === 0) {
       return NextResponse.json(
@@ -48,71 +45,69 @@ export async function POST(
     }
 
     // Extract arrays of option values per group
-    const valueArrays: ProductOptionValue[][] = allOptionGroups.map((group) => group.values);
+    const valueArrays = allOptionGroups.map((group: any) => group.values || []);
 
     // Compute Cartesian product combinations
-    const combinations: ProductOptionValue[][] = cartesianProduct(valueArrays);
+    const combinations = cartesianProduct(valueArrays);
 
-    const basePrice = Number(product.basePrice);
+    const basePrice = Number(product.base_price);
 
-    // Generate variation records in a database transaction
-    const createdVariations = await prisma.$transaction(async (tx) => {
-      // Clear old variations for clean generation
-      await tx.productVariation.deleteMany({
-        where: { productId },
-      });
+    // Delete old variations
+    await supabase
+      .from('product_variations')
+      .delete()
+      .eq('product_id', productId);
 
-      const variations = [];
+    const variations = [];
 
-      for (let i = 0; i < combinations.length; i++) {
-        const combo = combinations[i];
-        
-        // Sum total price adjustment from selected option values
-        const totalAdjustment = combo.reduce((sum: number, val: ProductOptionValue) => sum + Number(val.priceAdjustment), 0);
-        const finalPrice = basePrice + totalAdjustment;
+    for (let i = 0; i < combinations.length; i++) {
+      const combo = combinations[i];
+      
+      // Sum total price adjustment from selected option values
+      const totalAdjustment = combo.reduce((sum: number, val: any) => sum + Number(val.price_adjustment || 0), 0);
+      const finalPrice = basePrice + totalAdjustment;
 
-        // Construct SKU: e.g. BED-5FT-VEL-BLK-1
-        const skuPrefix = combo.map((v: ProductOptionValue) => v.value.substring(0, 3).toUpperCase().replace(/[^A-Z0-9]/g, '')).join('-');
-        const sku = `${product.slug.substring(0, 4).toUpperCase()}-${skuPrefix}-${i + 1}`;
+      // Construct SKU: e.g. BED-5FT-VEL-BLK-1
+      const skuPrefix = combo.map((v: any) => (v.value || '').substring(0, 3).toUpperCase().replace(/[^A-Z0-9]/g, '')).join('-');
+      const sku = `${(product.slug || '').substring(0, 4).toUpperCase()}-${skuPrefix}-${i + 1}`;
 
-        const variation = await tx.productVariation.create({
-          data: {
-            productId,
-            sku,
-            price: finalPrice,
-            stock: 10, // Default starting stock
-            values: {
-              create: combo.map((val: ProductOptionValue) => ({
-                optionValueId: val.id,
-              })),
-            },
-          },
-          include: {
-            values: {
-              include: {
-                optionValue: true,
-              },
-            },
-          },
-        });
+      const { data: variation } = await supabase
+        .from('product_variations')
+        .insert({
+          product_id: productId,
+          sku,
+          price: finalPrice,
+          stock: 10,
+        })
+        .select()
+        .single();
 
-        variations.push(variation);
+      if (variation) {
+        // Create variation values
+        const variationValues = combo.map((val: any) => ({
+          variation_id: variation.id,
+          option_value_id: val.id,
+        }));
+
+        await supabase
+          .from('product_variation_values')
+          .insert(variationValues);
+
+        variations.push({ ...variation, values: combo });
       }
+    }
 
-      // Update product type to VARIABLE
-      await tx.product.update({
-        where: { id: productId },
-        data: { productType: 'VARIABLE', stock: null },
-      });
-
-      return variations;
-    });
+    // Update product type to VARIABLE
+    await supabase
+      .from('products')
+      .update({ product_type: 'VARIABLE', stock: null })
+      .eq('id', productId);
 
     return NextResponse.json(
       {
-        message: `Successfully generated ${createdVariations.length} combinations`,
-        totalGenerated: createdVariations.length,
-        variations: createdVariations,
+        message: `Successfully generated ${variations.length} combinations`,
+        totalGenerated: variations.length,
+        variations,
       },
       { status: 201 }
     );

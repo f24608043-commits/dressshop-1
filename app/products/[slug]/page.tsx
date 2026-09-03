@@ -4,12 +4,12 @@ import React, { useEffect, useState, use } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useCart } from '@/components/providers/cart-context';
-import { useSession } from 'next-auth/react';
+import { useAuth } from '@/components/providers/auth-provider';
 
 export default function ProductDetailPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = use(params);
   const { addItem } = useCart();
-  const { data: session } = useSession();
+  const { session } = useAuth();
 
   const [product, setProduct] = useState<any>(null);
   const [loading, setLoading] = useState(true);

@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
+import { createClient } from '@/lib/supabase/server';
 import { requireAdmin } from '@/lib/admin-auth';
 
 // GET /api/global-forms/[id]
@@ -9,26 +9,20 @@ export async function GET(
 ) {
   try {
     const { id } = await params;
-    const globalForm = await prisma.globalForm.findUnique({
-      where: { id },
-      include: {
-        options: {
-          where: { parentId: null },
-          include: {
-            childOptions: {
-              include: {
-                childOptions: true,
-              },
-              orderBy: { displayOrder: 'asc' },
-            },
-          },
-          orderBy: { displayOrder: 'asc' },
-        },
-        products: {
-          select: { id: true, name: true, slug: true },
-        },
-      },
-    });
+    const supabase = await createClient();
+
+    const { data: globalForm } = await supabase
+      .from('global_forms')
+      .select(`
+        *,
+        options:global_form_options(
+          *,
+          child_options:global_form_options(*, child_options:global_form_options(*))
+        ),
+        products:products(id, name, slug)
+      `)
+      .eq('id', id)
+      .single();
 
     if (!globalForm) {
       return NextResponse.json({ error: 'Global form not found' }, { status: 404 });
@@ -53,10 +47,17 @@ export async function DELETE(
     }
 
     const { id } = await params;
+    const supabase = await createClient();
 
-    await prisma.globalForm.delete({
-      where: { id },
-    });
+    const { error } = await supabase
+      .from('global_forms')
+      .delete()
+      .eq('id', id);
+
+    if (error) {
+      console.error('Supabase delete error:', error);
+      return NextResponse.json({ error: 'Failed to delete global form' }, { status: 500 });
+    }
 
     return NextResponse.json({ message: 'Global form deleted successfully' });
   } catch (error) {

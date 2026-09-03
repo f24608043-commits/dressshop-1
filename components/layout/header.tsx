@@ -3,16 +3,22 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { useSession, signOut } from 'next-auth/react';
+import { useAuth } from '@/components/providers/auth-provider';
+import { supabase } from '@/lib/supabase/client';
 import { useCart } from '@/components/providers/cart-context';
 
 export function Header() {
   const pathname = usePathname();
   const router = useRouter();
-  const { data: session } = useSession();
+  const { session } = useAuth();
   const { itemCount, setIsCartOpen } = useCart();
   const [searchQuery, setSearchQuery] = useState('');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  const handleSignOut = async () => {
+    await supabase.auth.signOut();
+    router.push('/');
+  };
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -70,31 +76,21 @@ export function Header() {
             {session?.user ? (
               <div className="relative group">
                 <Link
-                  href={session.user.role === 'ADMIN' ? '/admin' : '/account'}
+                  href="/account"
                   className="flex items-center gap-1.5 text-xs font-semibold text-gray-800 hover:text-[#580520]"
                 >
                   <span className="w-8 h-8 rounded-full bg-amber-50 text-[#580520] flex items-center justify-center text-xs font-bold border border-amber-200">
-                    {session.user.name?.charAt(0) || 'U'}
+                    {session.user.user_metadata?.name?.charAt(0) || 'U'}
                   </span>
-                  <span className="hidden sm:inline">{session.user.name?.split(' ')[0]}</span>
-                  {session.user.role === 'ADMIN' && (
-                    <span className="bg-[#580520] text-white text-[9px] font-bold px-1.5 py-0.5 rounded tracking-wide">
-                      ADMIN
-                    </span>
-                  )}
+                  <span className="hidden sm:inline">{session.user.user_metadata?.name?.split(' ')[0]}</span>
                 </Link>
 
                 <div className="absolute right-0 mt-2 w-48 bg-white border border-gray-200 rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all p-2 text-xs z-50">
-                  {session.user.role === 'ADMIN' && (
-                    <Link href="/admin" className="block px-3 py-2 text-gray-800 hover:bg-amber-50 rounded font-semibold">
-                      👑 Admin Control Panel
-                    </Link>
-                  )}
                   <Link href="/account" className="block px-3 py-2 text-gray-800 hover:bg-amber-50 rounded font-medium">
                     📦 My Orders & Account
                   </Link>
                   <button
-                    onClick={() => signOut({ callbackUrl: '/' })}
+                    onClick={handleSignOut}
                     className="w-full text-left px-3 py-2 text-red-600 hover:bg-red-50 rounded mt-1 font-medium"
                   >
                     🚪 Sign Out

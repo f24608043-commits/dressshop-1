@@ -1,33 +1,23 @@
 import { NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
+import { createClient } from '@/lib/supabase/server';
 import { requireAdmin } from '@/lib/admin-auth';
 import { globalFormSchema } from '@/lib/validations/global-form';
 
 // GET /api/global-forms - Fetch all global forms with hierarchical options
 export async function GET() {
   try {
-    const globalForms = await prisma.globalForm.findMany({
-      include: {
-        options: {
-          where: { parentId: null }, // Fetch root-level parent options
-          include: {
-            childOptions: {
-              include: {
-                childOptions: true, // Up to 2 levels of nested child options
-              },
-              orderBy: { displayOrder: 'asc' },
-            },
-          },
-          orderBy: { displayOrder: 'asc' },
-        },
-        _count: {
-          select: { products: true },
-        },
-      },
-      orderBy: {
-        createdAt: 'desc',
-      },
-    });
+    const supabase = await createClient();
+    const { data: globalForms } = await supabase
+      .from('global_forms')
+      .select(`
+        *,
+        options:global_form_options(
+          *,
+          child_options:global_form_options(*, child_options:global_form_options(*))
+        ),
+        products:products(count)
+      `)
+      .order('created_at', { ascending: false });
 
     return NextResponse.json(globalForms);
   } catch (error) {
@@ -44,6 +34,7 @@ export async function POST(req: Request) {
       return auth.response;
     }
 
+    const supabase = await createClient();
     const body = await req.json();
     const validatedData = globalFormSchema.safeParse(body);
 
@@ -56,56 +47,57 @@ export async function POST(req: Request) {
 
     const { name, description, active, options } = validatedData.data;
 
-    // Transaction to create GlobalForm and recursively create options & childOptions
-    const newForm = await prisma.$transaction(async (tx) => {
-      const form = await tx.globalForm.create({
-        data: {
-          name,
-          description,
-          active,
-        },
-      });
+    // Create GlobalForm
+    const { data: form, error: formError } = await supabase
+      .from('global_forms')
+      .insert({ name, description, active })
+      .select()
+      .single();
 
-      // Recursive helper function to insert root options & child options
-      async function createOptionsRecursively(optsList: any[], parentId: string | null = null) {
-        for (let i = 0; i < optsList.length; i++) {
-          const opt = optsList[i];
-          const createdOpt = await tx.globalFormOption.create({
-            data: {
-              globalFormId: form.id,
-              parentId: parentId,
-              title: opt.title,
-              price: opt.price ?? 0,
-              imageUrl: opt.imageUrl || null,
-              description: opt.description || null,
-              enabled: opt.enabled ?? true,
-              inputType: opt.inputType ?? 'RADIO',
-              displayOrder: opt.displayOrder ?? i + 1,
-            },
-          });
+    if (formError) {
+      console.error('Supabase insert error:', formError);
+      return NextResponse.json({ error: 'Failed to create global form' }, { status: 500 });
+    }
 
-          if (opt.childOptions && opt.childOptions.length > 0) {
-            await createOptionsRecursively(opt.childOptions, createdOpt.id);
-          }
+    // Recursive helper function to insert root options & child options
+    async function createOptionsRecursively(optsList: any[], parentId: string | null = null) {
+      for (let i = 0; i < optsList.length; i++) {
+        const opt = optsList[i];
+        const { data: createdOpt } = await supabase
+          .from('global_form_options')
+          .insert({
+            global_form_id: form.id,
+            parent_id: parentId,
+            title: opt.title,
+            price: opt.price ?? 0,
+            image_url: opt.imageUrl || null,
+            description: opt.description || null,
+            enabled: opt.enabled ?? true,
+            input_type: opt.inputType ?? 'RADIO',
+            display_order: opt.displayOrder ?? i + 1,
+          })
+          .select()
+          .single();
+
+        if (createdOpt && opt.childOptions && opt.childOptions.length > 0) {
+          await createOptionsRecursively(opt.childOptions, createdOpt.id);
         }
       }
+    }
 
-      await createOptionsRecursively(options, null);
+    await createOptionsRecursively(options, null);
 
-      return tx.globalForm.findUnique({
-        where: { id: form.id },
-        include: {
-          options: {
-            where: { parentId: null },
-            include: {
-              childOptions: {
-                include: { childOptions: true },
-              },
-            },
-          },
-        },
-      });
-    });
+    const { data: newForm } = await supabase
+      .from('global_forms')
+      .select(`
+        *,
+        options:global_form_options(
+          *,
+          child_options:global_form_options(*, child_options:global_form_options(*))
+        )
+      `)
+      .eq('id', form.id)
+      .single();
 
     return NextResponse.json(newForm, { status: 201 });
   } catch (error) {

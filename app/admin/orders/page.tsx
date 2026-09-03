@@ -1,28 +1,16 @@
 import React from 'react';
-import { prisma } from '@/lib/prisma';
+import { createClient } from '@/lib/supabase/server';
 import { AdminOrdersClient } from './admin-orders-client';
 
 export const dynamic = 'force-dynamic';
 
 export default async function AdminOrdersPage() {
-  const orders = await prisma.order.findMany({
-    include: { 
-      items: true, 
-      coupon: true,
-      user: {
-        select: {
-          name: true,
-          email: true,
-          phone: true,
-          address: true,
-          city: true,
-          province: true,
-          postalCode: true
-        }
-      }
-    },
-    orderBy: { createdAt: 'desc' },
-  });
+  const supabase = await createClient();
+
+  const { data: orders } = await supabase
+    .from('orders')
+    .select('*, items:order_items(*), coupon:coupons(code), user:profiles(name, email, phone, address, city, province, postal_code)')
+    .order('created_at', { ascending: false });
 
   return (
     <div className="space-y-6">

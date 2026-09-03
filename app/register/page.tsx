@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { signIn } from 'next-auth/react';
+import { supabase } from '@/lib/supabase/client';
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -28,29 +28,64 @@ export default function RegisterPage() {
     setError(null);
 
     try {
-      const res = await fetch('/api/auth/register', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData),
+      // Sign up with Supabase
+      const { data, error: signUpError } = await supabase.auth.signUp({
+        email: formData.email,
+        password: formData.password,
+        options: {
+          data: {
+            name: formData.name,
+          },
+        },
       });
 
-      const data = await res.json();
+      if (signUpError) {
+        setError(signUpError.message || 'Registration failed.');
+        return;
+      }
 
-      if (res.ok) {
+      // Create profile entry
+      if (data.user) {
+        const { error: profileError } = await supabase
+          .from('profiles')
+          .insert({
+            id: data.user.id,
+            name: formData.name,
+            email: formData.email,
+            role: 'CUSTOMER',
+          });
+
+        if (profileError) {
+          setError('Failed to create profile. Please contact support.');
+          return;
+        }
+
         // Auto sign-in after registration
-        await signIn('credentials', {
+        await supabase.auth.signInWithPassword({
           email: formData.email,
           password: formData.password,
-          redirect: false,
         });
+
         router.push('/account');
-      } else {
-        setError(data.error || 'Registration failed.');
+        router.refresh();
       }
     } catch {
       setError('Network error registering account.');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleGoogleLogin = async () => {
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: `${window.location.origin}/account`,
+      },
+    });
+
+    if (error) {
+      setError('Google sign-up failed. Please try again.');
     }
   };
 
@@ -127,7 +162,7 @@ export default function RegisterPage() {
 
         <button
           type="button"
-          onClick={() => signIn('google', { callbackUrl: '/account' })}
+          onClick={handleGoogleLogin}
           className="w-full py-3 bg-white hover:bg-gray-50 text-gray-700 font-bold text-xs rounded-xl border border-gray-300 shadow flex items-center justify-center gap-2"
         >
           <svg className="w-5 h-5" viewBox="0 0 24 24">
