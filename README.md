@@ -1,36 +1,88 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Golden Lehnga - Bridal Couture E-Commerce
+
+This is a [Next.js](https://nextjs.org) e-commerce application for bridal couture, built with Supabase for authentication and database management.
+
+## Prerequisites
+
+- Node.js 18+ installed
+- A Supabase project created at [supabase.com](https://supabase.com)
+- Supabase project URL and anon key
+
+## Environment Setup
+
+1. Create a `.env.local` file in the root directory:
+
+```bash
+NEXT_PUBLIC_SUPABASE_URL=your_supabase_project_url
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+```
+
+2. Get your Supabase credentials:
+   - Go to your Supabase project dashboard
+   - Navigate to Settings → API
+   - Copy the Project URL and Anon Key
+
+## Database Setup
+
+1. Run the Supabase schema migration:
+
+```bash
+# Using Supabase CLI (recommended)
+supabase db push
+
+# Or manually run the SQL from supabase/schema.sql in your Supabase SQL Editor
+```
+
+2. Apply Row Level Security (RLS) policies:
+
+```bash
+# Run the RLS policies from supabase/rls.sql in your Supabase SQL Editor
+```
 
 ## Getting Started
 
-First, run the development server:
+First, install dependencies:
+
+```bash
+npm install
+```
+
+Then run the development server:
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Deployment
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### Vercel Deployment
 
-## Learn More
+1. Push your code to GitHub
+2. Import your repository in Vercel
+3. Add environment variables in Vercel dashboard:
+   - `NEXT_PUBLIC_SUPABASE_URL`
+   - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+4. Deploy
 
-To learn more about Next.js, take a look at the following resources:
+### Other Platforms
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Ensure you add the following environment variables to your deployment platform:
+- `NEXT_PUBLIC_SUPABASE_URL`
+- `NEXT_PUBLIC_SUPABASE_ANON_KEY`
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Project Structure
 
-## Deploy on Vercel
+- `app/` - Next.js App Router pages and API routes
+- `components/` - React components
+- `lib/supabase/` - Supabase client configuration
+- `supabase/` - Database schema and RLS policies
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Tech Stack
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- Next.js 16.3.3 with App Router
+- Supabase for authentication and database
+- React 19
+- TypeScript
+- Tailwind CSS 4
