@@ -1,11 +1,13 @@
 import React from 'react';
 import { createClient } from '@/lib/supabase/server';
+import { cookies } from 'next/headers';
 import { notFound } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
 
 export default async function BlogPostPage({ params }: { params: { slug: string } }) {
-  const supabase = await createClient();
+  const cookieStore = await cookies();
+  const supabase = createClient(cookieStore);
   const { data: blog } = await supabase
     .from('blogs')
     .select('*')

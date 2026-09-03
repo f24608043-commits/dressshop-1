@@ -1,12 +1,14 @@
 import React from 'react';
 import { createClient } from '@/lib/supabase/server';
+import { cookies } from 'next/headers';
 import { getUserRole } from '@/lib/supabase/auth';
 import { redirect } from 'next/navigation';
 
 export const dynamic = 'force-dynamic';
 
 export default async function ContactAdminPage() {
-  const supabase = await createClient();
+  const cookieStore = await cookies();
+  const supabase = createClient(cookieStore);
   const { data: { user } } = await supabase.auth.getUser();
   const role = await getUserRole();
 

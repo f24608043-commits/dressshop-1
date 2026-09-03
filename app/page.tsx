@@ -2,13 +2,15 @@ import React from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { createClient } from '@/lib/supabase/server';
+import { cookies } from 'next/headers';
 import { ProductCard } from '@/components/product/product-card';
 import { HeroSection } from '@/components/hero-section';
 
 export const dynamic = 'force-dynamic';
 
 export default async function HomePage() {
-  const supabase = await createClient();
+  const cookieStore = await cookies();
+  const supabase = createClient(cookieStore);
   const [featuredProducts, categories, allProducts] = await Promise.all([
     supabase
       .from('products')
